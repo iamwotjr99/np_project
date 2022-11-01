@@ -1,0 +1,17 @@
+# mysql db data
+/back/mysql/db
+
+/front/node_modules/
+/front/.expo/
+/front/dist/
+/front/npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+/front/web-build/
+
+# macOS
+.DS_Store

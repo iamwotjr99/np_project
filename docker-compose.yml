@@ -1,0 +1,64 @@
+version: '3'
+
+services:
+  frontend:
+    container_name: frontend
+    image: frontend:1.3
+    build:
+      context: .
+      args:
+        - NODE_ENV=development
+    environment:
+      - NODE_ENV=development
+      - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+      - REACT_NATIVE_PACKAGER_HOSTNAME=10.10.1.168
+    tty: true
+    ports:
+      - '19006:19006'
+      - '19001:19001'
+      - '19002:19002'
+      - '19000:19000'
+    volumes:
+      - ./front:/opt/front/app:delegated
+      - ./front/package.json:/opt/front/package.json
+      - ./front/package-lock.json:/opt/front/package-lock.json
+      - notused:/opt/front/app/node_modules
+    healthcheck:
+      disable: true
+
+  go-server:
+    container_name: go-server
+    image: go-server:5.0
+    ports:
+      - "2341:8008"
+
+  nginx:
+    container_name: nginx-np
+    image: nginx-np:1.0
+    volumes:
+      - ./back/nginx/default.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - go-server
+      - mysql
+  
+  mysql: 
+    container_name: mysql-articles
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: toget_study
+      MYSQL_USER: article_admin
+      MYSQL_PASSWORD: np1234
+      MYSQL_ROOT_PASSWORD: np1234
+      TZ: Asia/Seoul
+    volumes:
+      - ./back/mysql/db:/var/lib/mysql
+      - ./back/mysql/conf.d:/etc/mysql/conf.d
+      - ./back/mysql/initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+
+volumes:
+  notused:

@@ -1,21 +1,21 @@
-package person
+package models
 
 type Person struct {
-	name string
-	pw   string
+	Name string `json:"name" binding:"required"`
+	Pw   string `json:"pw" binding:"required"`
 }
 
 // Constructor is make 'Person' object
 func Constructor(name string, pw string) *Person {
-	person := Person{name: name, pw: pw}
+	person := Person{Name: name, Pw: pw}
 
 	return &person
 }
 
 // GetPerson info of person
 func GetPerson(p *Person) (string, string) {
-	name := p.name
-	pw := p.pw
+	name := p.Name
+	pw := p.Pw
 
 	return name, pw
 }
