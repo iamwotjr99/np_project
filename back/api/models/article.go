@@ -31,7 +31,7 @@ func (a Article) Get() (article Article, err error) {
 }
 
 func (a Article) GetAll() (articles []Article, err error) {
-	db, err := sql.Open("mysql", "article_admin:np1234@tcp(mysql-articles)/toget_study")
+	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/toget_study")
 	if err != nil {
 		log.Fatalln(err)
 	}
