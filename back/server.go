@@ -8,8 +8,9 @@ import (
 	"github.com/iamwotjr99/np_project/back/api/middleware"
 	"github.com/iamwotjr99/np_project/back/api/models"
 
-	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+
+	"github.com/gin-gonic/gin"
 )
 
 func setupRouter() *gin.Engine {
