@@ -9,21 +9,21 @@ import (
 
 type Article struct {
 	Id        int    `json:"id"`
-	Author    string `json:"author"`
-	Title     string `json:"title"`
+	AccountID string `json:"accountID"`
 	Content   string `json:"content"`
 	CreatedAt string `json:"createdAt"`
 }
 
 func (a Article) Get() (article Article, err error) {
-	db, err := sql.Open("mysql", "article_admin:np1234@tcp(mysql-articles)/toget_study")
+	// db, err := sql.Open("mysql", "article_admin:np1234@tcp(mysql-articles)/toget_study")
+	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/toget_study")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer db.Close()
 
 	row := db.QueryRow("SELECT * FROM article WHERE id=?", a.Id)
-	err = row.Scan(&article.Id, &article.Author, &article.Title, &article.Content, &article.CreatedAt)
+	err = row.Scan(&article.Id, &article.AccountID, &article.Content, &article.CreatedAt)
 	if err != nil {
 		return
 	}
@@ -44,7 +44,7 @@ func (a Article) GetAll() (articles []Article, err error) {
 
 	for rows.Next() {
 		var article Article
-		err = rows.Scan(&article.Id, &article.Author, &article.Title, &article.Content, &article.CreatedAt)
+		err = rows.Scan(&article.Id, &article.AccountID, &article.Content, &article.CreatedAt)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -56,14 +56,15 @@ func (a Article) GetAll() (articles []Article, err error) {
 }
 
 func Add(article Article) {
-	db, err := sql.Open("mysql", "article_admin:np1234@tcp(mysql-articles)/toget_study")
+	// db, err := sql.Open("mysql", "article_admin:np1234@tcp(mysql-articles)/toget_study")
+	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/toget_study")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer db.Close()
 
 	insert, err := db.Query("INSERT INTO article(author, title, content) VALUES (?, ?, ?)",
-		article.Author, article.Title, article.Content)
+		article.AccountID, article.Content)
 	if err != nil {
 		panic(err.Error())
 	}
