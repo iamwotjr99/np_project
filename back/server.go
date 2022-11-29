@@ -28,8 +28,8 @@ func setupRouter() *gin.Engine {
 	r.POST("/user/auth", authorizeUser)
 
 	// Article
-	r.GET("/articles", articleAll)
-	r.POST("/articles", articleAdd)
+	// r.GET("/articles", articleAll)
+	// r.POST("/articles", articleAdd)
 	r.POST("/upload", uploadHandler)
 	return r
 }
@@ -76,50 +76,63 @@ func authorizeUser(c *gin.Context) {
 	}
 }
 
-func articleAll(c *gin.Context) {
-	a := models.Article{}
-	articles, err := a.GetAll()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"result": articles,
-		"count":  len(articles),
-	})
-}
+// func articleAll(c *gin.Context) {
+// 	a := models.Article{}
+// 	articles, err := a.GetAll()
+// 	if err != nil {
+// 		log.Fatalln(err)
+// 	}
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"result": articles,
+// 		"count":  len(articles),
+// 	})
+// }
 
-func articleAdd(c *gin.Context) {
-	var article models.Article
+// func articleAdd(c *gin.Context) {
+// 	var article models.Article
 
-	if err := c.BindJSON(&article); err != nil {
-		c.AbortWithStatus(http.StatusBadRequest)
-	} else {
-		models.Add(article)
-		c.IndentedJSON(http.StatusCreated, gin.H{
-			"msg": "Post OK",
-		})
-	}
-}
+// 	if err := c.BindJSON(&article); err != nil {
+// 		c.AbortWithStatus(http.StatusBadRequest)
+// 	} else {
+// 		models.Add(article)
+// 		c.IndentedJSON(http.StatusCreated, gin.H{
+// 			"msg": "Post OK",
+// 		})
+// 	}
+// }
 
 func uploadHandler(c *gin.Context) {
-	form, _ := c.MultipartForm()
+	var form models.Article
 
-	files := form.File["file"]
-	filePaths := []string{}
+	if err := c.ShouldBind(&form); err != nil {
+		fmt.Println(&form)
+		c.String(http.StatusBadRequest, "bad request")
+		return
+	}
 
-	for _, file := range files {
+	fmt.Println(&form)
+
+	// files := form.File["file"]
+	images := []models.Image{}
+	imageList := models.ImageList{Images: images}
+
+	for _, file := range form.Images {
 		fileExt := filepath.Ext(file.Filename)
 		originalFileName := strings.TrimSuffix(filepath.Base(file.Filename), filepath.Ext(file.Filename))
 		now := time.Now()
 		filename := strings.ReplaceAll(strings.ToLower(originalFileName), " ", "-") + "-" + fmt.Sprintf("%v", now.Unix()) + fileExt
 		filepath := "http://192.168.0.53:8008/image/" + filename
 
-		filePaths = append(filePaths, filepath)
+		image := models.Image{Filename: filename, Filepath: filepath}
+
+		imageList.AddItem(image)
+
 		out, err := os.Create("./images/" + filename)
 		if err != nil {
 			log.Fatal(err)
+			c.String(http.StatusInternalServerError, "unknown error")
+			return
 		}
-		log.Println(filename)
 		defer out.Close()
 
 		readerFile, _ := file.Open()
@@ -128,5 +141,9 @@ func uploadHandler(c *gin.Context) {
 			log.Fatal(err)
 		}
 	}
-	c.JSON(http.StatusOK, gin.H{"filepath": filePaths})
+	fmt.Println(len(imageList.Images))
+
+	models.Add(form, imageList)
+
+	c.JSON(http.StatusOK, gin.H{"msg": "OK"})
 }
