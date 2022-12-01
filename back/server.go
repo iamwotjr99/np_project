@@ -31,6 +31,7 @@ func setupRouter() *gin.Engine {
 	// r.GET("/articles", articleAll)
 	// r.POST("/articles", articleAdd)
 	r.POST("/upload", uploadHandler)
+	r.GET("/test", testGetAll)
 	return r
 }
 
@@ -52,6 +53,21 @@ func someMethod(c *gin.Context) {
 		"sending": httpMethod,
 		"client":  a,
 	})
+}
+
+func testGetAll(c *gin.Context) {
+	fmt.Println("test start!")
+	articles, err := models.GetAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("%v", err),
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"articles": articles,
+	})
+
+	fmt.Println("test end!")
 }
 
 func authorizeUser(c *gin.Context) {
