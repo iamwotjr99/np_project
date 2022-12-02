@@ -31,13 +31,14 @@ func setupRouter() *gin.Engine {
 	// r.GET("/articles", articleAll)
 	// r.POST("/articles", articleAdd)
 	r.POST("/upload", uploadHandler)
-	r.GET("/test", testGetAll)
+	r.GET("/articles", articleGetAll)
 	return r
 }
 
 func main() {
 	r := setupRouter()
 	r.Use(middleware.CORS)
+	r.Static("/image", "./images")
 	r.Run(":8008")
 
 }
@@ -55,8 +56,7 @@ func someMethod(c *gin.Context) {
 	})
 }
 
-func testGetAll(c *gin.Context) {
-	fmt.Println("test start!")
+func articleGetAll(c *gin.Context) {
 	articles, err := models.GetAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -67,7 +67,6 @@ func testGetAll(c *gin.Context) {
 		"articles": articles,
 	})
 
-	fmt.Println("test end!")
 }
 
 func authorizeUser(c *gin.Context) {
@@ -137,9 +136,10 @@ func uploadHandler(c *gin.Context) {
 		originalFileName := strings.TrimSuffix(filepath.Base(file.Filename), filepath.Ext(file.Filename))
 		now := time.Now()
 		filename := strings.ReplaceAll(strings.ToLower(originalFileName), " ", "-") + "-" + fmt.Sprintf("%v", now.Unix()) + fileExt
-		filepath := "http://192.168.0.53:8008/image/" + filename
+		filePath := "http://192.168.0.53:8008/image/" + filename
+		// filePath := "http://192.168.25.52:8008/image/" + filename
 
-		image := models.Image{Filename: filename, Filepath: filepath}
+		image := models.Image{Filename: filename, Filepath: filePath}
 
 		imageList.AddItem(image)
 

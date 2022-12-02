@@ -28,8 +28,8 @@ type Res_Article struct {
 }
 
 type Image struct {
-	Filename string
-	Filepath string
+	Filename string `json:"filename"`
+	Filepath string `json:"filepath"`
 }
 
 type ImageList struct {
@@ -64,7 +64,7 @@ func GetAll() (articles []Res_Article, err error) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT * FROM article")
+	rows, err := db.Query("SELECT * FROM article ORDER BY id DESC")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -114,8 +114,6 @@ func GetAll() (articles []Res_Article, err error) {
 
 	}
 	defer rows.Close()
-
-	fmt.Println(articles)
 
 	return articles, err
 }
