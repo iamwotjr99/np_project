@@ -153,3 +153,37 @@ func Add(article Article, imageList ImageList) {
 		}
 	}
 }
+
+func Delete(id int) (err error) {
+	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/healer_com")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	delImages, err := db.Exec("DELETE from article_images WHERE article_id=?", id)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	delImages_id, err := delImages.LastInsertId()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println("Delete Images ID: ", delImages_id)
+
+	delArticle, err := db.Exec("DELETE from article WHERE id=?", id)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	delArticle_id, err := delArticle.LastInsertId()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println("Delete Article ID: ", delArticle_id)
+
+	return err
+}

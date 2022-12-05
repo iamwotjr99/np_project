@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ func setupRouter() *gin.Engine {
 	// r.POST("/articles", articleAdd)
 	r.POST("/upload", uploadHandler)
 	r.GET("/articles", articleGetAll)
+	r.DELETE("/article/:id", deleteArticle)
 	return r
 }
 
@@ -162,4 +164,25 @@ func uploadHandler(c *gin.Context) {
 	models.Add(form, imageList)
 
 	c.JSON(http.StatusOK, gin.H{"msg": "OK"})
+}
+
+func deleteArticle(c *gin.Context) {
+	strId := c.Params.ByName("id")
+	fmt.Println(strId)
+
+	intId, err := strconv.Atoi(strId)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	err = models.Delete(intId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("%v", err),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "Delete OK",
+	})
 }
