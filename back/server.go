@@ -29,10 +29,10 @@ func setupRouter() *gin.Engine {
 	r.POST("/user/auth", authorizeUser)
 
 	// Article
-	// r.GET("/articles", articleAll)
-	// r.POST("/articles", articleAdd)
-	r.POST("/upload", uploadHandler)
+	r.GET("/article/:id", artcileGet)
 	r.GET("/articles", articleGetAll)
+	r.POST("/upload", addArticle)
+	r.PUT("/article/:id", updateArticle)
 	r.DELETE("/article/:id", deleteArticle)
 	return r
 }
@@ -55,6 +55,26 @@ func someMethod(c *gin.Context) {
 		"status":  "good",
 		"sending": httpMethod,
 		"client":  a,
+	})
+}
+
+func artcileGet(c *gin.Context) {
+	strId := c.Params.ByName("id")
+
+	intId, err := strconv.Atoi(strId)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	article, err := models.Get(intId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("%v", err),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"article": article,
 	})
 }
 
@@ -93,32 +113,7 @@ func authorizeUser(c *gin.Context) {
 	}
 }
 
-// func articleAll(c *gin.Context) {
-// 	a := models.Article{}
-// 	articles, err := a.GetAll()
-// 	if err != nil {
-// 		log.Fatalln(err)
-// 	}
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"result": articles,
-// 		"count":  len(articles),
-// 	})
-// }
-
-// func articleAdd(c *gin.Context) {
-// 	var article models.Article
-
-// 	if err := c.BindJSON(&article); err != nil {
-// 		c.AbortWithStatus(http.StatusBadRequest)
-// 	} else {
-// 		models.Add(article)
-// 		c.IndentedJSON(http.StatusCreated, gin.H{
-// 			"msg": "Post OK",
-// 		})
-// 	}
-// }
-
-func uploadHandler(c *gin.Context) {
+func addArticle(c *gin.Context) {
 	var form models.Article
 
 	if err := c.ShouldBind(&form); err != nil {
@@ -163,7 +158,59 @@ func uploadHandler(c *gin.Context) {
 
 	models.Add(form, imageList)
 
-	c.JSON(http.StatusOK, gin.H{"msg": "OK"})
+	c.JSON(http.StatusOK, gin.H{"msg": "Post OK"})
+}
+
+func updateArticle(c *gin.Context) {
+	strId := c.Params.ByName("id")
+
+	intId, err := strconv.Atoi(strId)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var form models.Article
+
+	err = c.ShouldBind(&form)
+	if err != nil {
+		c.String(http.StatusBadRequest, "bad request")
+		return
+	}
+
+	images := []models.Image{}
+	imageList := models.ImageList{Images: images}
+
+	for _, file := range form.Images {
+		fileExt := filepath.Ext(file.Filename)
+		originalFileName := strings.TrimSuffix(filepath.Base(file.Filename), filepath.Ext(file.Filename))
+		now := time.Now()
+		fileName := strings.ReplaceAll(strings.ToLower(originalFileName), " ", "-") + "-" + fmt.Sprintf("%v", now.Unix()) + fileExt
+		filePath := "http://192.168.0.53:8008/image/" + fileName
+		// filePath := "http://192.168.25.52:8008/image/" + filename
+
+		image := models.Image{Filename: fileName, Filepath: filePath}
+
+		imageList.AddItem(image)
+
+		out, err := os.Create("./images/" + fileName)
+		if err != nil {
+			log.Fatal(err)
+			c.String(http.StatusInternalServerError, "unknown error")
+			return
+		}
+		defer out.Close()
+
+		readerFile, _ := file.Open()
+		_, err = io.Copy(out, readerFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	models.Update(form, imageList, intId)
+
+	c.JSON(http.StatusOK, gin.H{"msg": "Update OK"})
+
 }
 
 func deleteArticle(c *gin.Context) {

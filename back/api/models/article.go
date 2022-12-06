@@ -41,21 +41,56 @@ func (il *ImageList) AddItem(image Image) []Image {
 	return il.Images
 }
 
-// func (a Article) Get() (article Article, err error) {
-// 	// db, err := sql.Open("mysql", "article_admin:np1234@tcp(mysql-articles)/toget_study")
-// 	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/toget_study")
-// 	if err != nil {
-// 		log.Fatalln(err)
-// 	}
-// 	defer db.Close()
+func Get(id int) (article Res_Article, err error) {
+	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/healer_com")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer db.Close()
 
-// 	row := db.QueryRow("SELECT * FROM article WHERE id=?", a.Id)
-// 	err = row.Scan(&article.Id, &article.AccountID, &article.Content, &article.CreatedAt)
-// 	if err != nil {
-// 		return
-// 	}
-// 	return
-// }
+	query, err := db.Query("SELECT * FROM article WHERE id = ?", id)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var resultArticle Res_Article
+	images := []Image{}
+
+	for query.Next() {
+		err = query.Scan(&resultArticle.PostID, &resultArticle.Author, &resultArticle.AccountID,
+			&resultArticle.Content, &resultArticle.CreatedAt, &resultArticle.LikeCnt)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		queryImages, err := db.Query("SELECT * FROM article_images WHERE article_id = ?", id)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		for queryImages.Next() {
+			var filename sql.NullString
+			var filepath sql.NullString
+			var fileID sql.NullInt64
+			var id sql.NullInt64
+
+			err = queryImages.Scan(&id, &filename, &filepath, &fileID)
+			if err != nil {
+				panic(err.Error())
+			}
+			defer queryImages.Close()
+
+			image := Image{Filename: filename.String, Filepath: filepath.String}
+
+			images = append(images, image)
+		}
+	}
+	defer query.Close()
+
+	resultArticle.Images = images
+
+	return resultArticle, err
+}
 
 func GetAll() (articles []Res_Article, err error) {
 	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/healer_com")
@@ -94,13 +129,6 @@ func GetAll() (articles []Res_Article, err error) {
 			if err != nil {
 				panic(err.Error())
 			}
-
-			// if !id.Valid && !filename.Valid && !filepath.Valid && !fileID.Valid {
-			// 	id.Int64 = -1
-			// 	filename.String = "NULL"
-			// 	filepath.String = "NULL"
-			// 	fileID.Int64 = -1
-			// }
 
 			image := Image{Filename: filename.String, Filepath: filepath.String}
 
@@ -151,6 +179,32 @@ func Add(article Article, imageList ImageList) {
 		if n == 1 {
 			fmt.Println("1 row inserted.")
 		}
+	}
+}
+
+func Update(article Article, imageList ImageList, id int) {
+	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/healer_com")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	query, err := db.Exec("UPDATE article SET author=?, accountID=?, content=?, likeCnt=? WHERE id=?",
+		article.Author, article.AccountID, article.Content, article.LikeCnt, id)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println(query)
+
+	for _, image := range imageList.Images {
+		queryImages, err := db.Exec("UPDATE article_images SET file_name=?, file_url=? WHERE article_id=?",
+			image.Filename, image.Filepath, id)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		fmt.Println(queryImages.RowsAffected())
 	}
 }
 
