@@ -36,6 +36,15 @@ type ImageList struct {
 	Images []Image
 }
 
+type Comment struct {
+	Id         string `json:"id"`
+	AccountID  string `json:"accountID"`
+	Author     string `json:"author"`
+	Comment    string `json:"comment"`
+	CreatedAt  string `json:"createdAt"`
+	Article_id int    `json:"article_id"`
+}
+
 func (il *ImageList) AddItem(image Image) []Image {
 	il.Images = append(il.Images, image)
 	return il.Images
@@ -182,7 +191,7 @@ func Add(article Article, imageList ImageList) {
 	}
 }
 
-func Update(article Article, imageList ImageList, id int) {
+func Update(article Article, imageList ImageList, id int) (postID int) {
 	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/healer_com")
 	if err != nil {
 		panic(err.Error())
@@ -195,17 +204,25 @@ func Update(article Article, imageList ImageList, id int) {
 		panic(err.Error())
 	}
 
-	fmt.Println(query)
+	n, err := query.LastInsertId()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Println("query:", n)
 
 	for _, image := range imageList.Images {
+		fmt.Println(image.Filepath)
 		queryImages, err := db.Exec("UPDATE article_images SET file_name=?, file_url=? WHERE article_id=?",
 			image.Filename, image.Filepath, id)
 		if err != nil {
 			panic(err.Error())
 		}
 
-		fmt.Println(queryImages.RowsAffected())
+		fmt.Println(queryImages)
 	}
+
+	return id
 }
 
 func Delete(id int) (err error) {
@@ -240,4 +257,57 @@ func Delete(id int) (err error) {
 	fmt.Println("Delete Article ID: ", delArticle_id)
 
 	return err
+}
+
+func CreateComment(comment Comment, id int) (err error) {
+	fmt.Println(comment, id)
+	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/healer_com")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	query, err := db.Exec("INSERT INTO article_comment(accountID, author, comment, article_id) VALUES (?, ?, ?, ?)",
+		comment.AccountID, comment.Author, comment.Comment, id)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	n, err := query.RowsAffected()
+	if err != nil {
+		panic(err.Error())
+	}
+	if n == 1 {
+		fmt.Println("1 row inserted")
+	}
+
+	return err
+}
+
+func ReadComment(id int) (comments []Comment, err error) {
+	db, err := sql.Open("mysql", "root:asd98048@tcp(localhost:3306)/healer_com")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT * FROM article_comment WHERE article_id=?", id)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for rows.Next() {
+		var comment Comment
+
+		err = rows.Scan(&comment.Id, &comment.Author, &comment.AccountID, &comment.Comment,
+			&comment.CreatedAt, &comment.Article_id)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		comments = append(comments, comment)
+	}
+	defer rows.Close()
+
+	return comments, err
 }

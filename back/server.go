@@ -34,6 +34,10 @@ func setupRouter() *gin.Engine {
 	r.POST("/upload", addArticle)
 	r.PUT("/article/:id", updateArticle)
 	r.DELETE("/article/:id", deleteArticle)
+
+	// Article comment
+	r.GET("/article/comment/:id", getComments)
+	r.POST("/article/comment/:id", postComment)
 	return r
 }
 
@@ -184,7 +188,7 @@ func updateArticle(c *gin.Context) {
 		fileExt := filepath.Ext(file.Filename)
 		originalFileName := strings.TrimSuffix(filepath.Base(file.Filename), filepath.Ext(file.Filename))
 		now := time.Now()
-		fileName := strings.ReplaceAll(strings.ToLower(originalFileName), " ", "-") + "-" + fmt.Sprintf("%v", now.Unix()) + fileExt
+		fileName := strings.ReplaceAll(strings.ToLower(originalFileName[:30]), " ", "-") + "-" + fmt.Sprintf("%v", now.Unix()) + fileExt
 		filePath := "http://192.168.0.53:8008/image/" + fileName
 		// filePath := "http://192.168.25.52:8008/image/" + filename
 
@@ -207,9 +211,12 @@ func updateArticle(c *gin.Context) {
 		}
 	}
 
-	models.Update(form, imageList, intId)
+	postID := models.Update(form, imageList, intId)
 
-	c.JSON(http.StatusOK, gin.H{"msg": "Update OK"})
+	c.JSON(http.StatusOK, gin.H{
+		"msg":    "Update OK",
+		"postID": postID,
+	})
 
 }
 
@@ -231,5 +238,55 @@ func deleteArticle(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "Delete OK",
+	})
+}
+
+func getComments(c *gin.Context) {
+	strId := c.Params.ByName("id")
+
+	intId, err := strconv.Atoi(strId)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	comments, err := models.ReadComment(intId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("%v", err),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"comments": comments,
+	})
+
+}
+
+func postComment(c *gin.Context) {
+	strId := c.Params.ByName("id")
+
+	intId, err := strconv.Atoi(strId)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var comment models.Comment
+
+	err = c.BindJSON(&comment)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("%v", err),
+		})
+	}
+
+	err = models.CreateComment(comment, intId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("%v", err),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "Post OK",
 	})
 }
